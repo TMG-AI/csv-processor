@@ -1,0 +1,79 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSV Processor</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .upload-section { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        input[type="file"] { margin: 10px 0; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <h1>CSV Processor</h1>
+    <p>Upload your CSV files to process them for n8n workflow.</p>
+    
+    <div class="upload-section">
+        <h3>Twitter/X CSV Upload</h3>
+        <input type="file" id="twitterFile" accept=".csv">
+        <button onclick="uploadFile('twitter')">Upload Twitter CSV</button>
+        <div id="twitterResult" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="upload-section">
+        <h3>News CSV Upload</h3>
+        <input type="file" id="newsFile" accept=".csv">
+        <button onclick="uploadFile('news')">Upload News CSV</button>
+        <div id="newsResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        async function uploadFile(type) {
+            const fileInput = document.getElementById(type + 'File');
+            const resultDiv = document.getElementById(type + 'Result');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = 'Uploading...';
+                
+                const response = await fetch(`/upload-${type}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <strong>Success!</strong><br>
+                        Records processed: ${result.records_processed}<br>
+                        <strong>Data URL:</strong> <input type="text" value="${window.location.origin}${result.data_url}" style="width: 100%; margin-top: 5px;" readonly onclick="this.select()">
+                        <br><small>Copy this URL and paste it into your n8n form</small>
+                    `;
+                } else {
+                    throw new Error(result.detail || 'Upload failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
+```
